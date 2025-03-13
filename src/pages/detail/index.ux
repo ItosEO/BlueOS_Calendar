@@ -1,0 +1,103 @@
+<template>
+  <div class="detail-page" @swipe="goBack">
+    <div class="content">
+      <text class="date-text">{{ year }}年{{ formattedMonth }}月{{ day }}日</text>
+      <text class="week-text">星期{{ week }}</text>
+      <text class="lunar-text">{{ lunarInfo.lunarDateString }}</text>
+      <text if="{{ lunarInfo.lunarFestival }}" class="festival-text">{{ lunarInfo.lunarFestival }}</text>
+      <text if="{{ lunarInfo.solarFestival }}" class="festival-text">{{ lunarInfo.solarFestival }}</text>
+    </div>
+  </div>
+</template>
+
+<style>
+  .detail-page {
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #000000;
+  }
+  
+  .content {
+    width: 80%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .date-text {
+    font-size: 40px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  
+  .week-text {
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  
+  .lunar-text {
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 10px;
+  }
+  
+  .festival-text {
+    font-size: 30px;
+    color: #FF6B6B;
+    margin-bottom: 5px;
+  }
+</style>
+
+<script>
+import router from "@blueos.app.appmanager.router";
+import lunarUtil from "../../common/utils/sloarToLunar";
+
+export default {
+  data: {
+    year: "",
+    month: "",
+    day: "",
+    week: null,
+    formattedMonth: '', // 用于存储格式化后的月份
+    lunarInfo: {}
+  },
+  
+  onInit() {
+    const { year, month, day } = this;
+    
+    this.year = parseInt(year); // 转换为整数
+    this.month = parseInt(month); // 转换为整数
+    this.day = parseInt(day); // 转换为整数
+    
+    this.getWeek();
+    this.getLunarInfo();
+    this.formattedMonth = this.month < 10 ? `0${this.month}` : this.month;
+  },
+  
+  getWeek() {
+    const { year, month, day } = this;
+    const weeks = ["日", "一", "二", "三", "四", "五", "六"];
+    const weekIndex = new Date(year, month - 1, day).getDay();
+    this.week = weeks[weekIndex];
+  },
+  
+  getLunarInfo() {
+    const { year, month, day } = this;
+    // 调用农历转换工具
+    this.lunarInfo = lunarUtil.solar2lunar(year, month, day);
+    console.log("农历信息: ", JSON.stringify(this.lunarInfo));
+  },
+  
+  goBack(eve) {
+    if (eve.direction === "right") {
+      router.back();
+    }
+  }
+}
+</script>

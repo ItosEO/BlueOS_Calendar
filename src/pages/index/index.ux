@@ -1,0 +1,339 @@
+<template>
+  <div class="home-page" @swipe="handleSwipe">
+    <div class="header">
+      <div class="year-month">
+        <text class="title" style="color: white;">{{ year }}年</text>
+        <text class="title" style="color: white;">{{ formattedMonth }}月</text>
+      </div>
+      <div class="week-head">
+        <text class="week-text weekend">日</text>
+        <text class="week-text">一</text>
+        <text class="week-text">二</text>
+        <text class="week-text">三</text>
+        <text class="week-text">四</text>
+        <text class="week-text">五</text>
+        <text class="week-text weekend">六</text>
+      </div>
+      <div class="divider"></div>
+    </div>
+    <div class="list">
+      <div for="row in list" class="item" style="height: {{height}}">
+        <div class="cell" for="cell in row" tid="id">
+          <text @click="handleClick(cell)" class="{{cell.className}}">
+            {{ cell.value }}
+          </text>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+  .home-page {
+    width: 100%;
+    height: 100%;
+    border-radius: 0px;
+    flex-direction: column;
+    align-items: center;
+    background-color: #000000;
+  }
+  .header {
+    width: 100%;
+    height: 110px;
+    margin-top: 20px;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .year-month {
+    width: 240px;
+    height: 60px;
+    justify-content: center;
+    align-items: center;
+  }
+  .title {
+    font-weight: 700;
+    font-size: 40px;
+  }
+  .week-head {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+  }
+  .week-text {
+    width: 64px;
+    font-size: 40px;
+    font-weight: 700;
+    color: rgb(255, 255, 255);
+    text-align: center;
+  }
+  .weekend {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .divider {
+    width: 100%;
+    height: 2px;
+    margin-top: 4px;
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  .list {
+    width: 100%;
+    height: 350px;
+    flex-direction: column;
+  }
+  .item {
+    width: 100%;
+    height: 80px;
+    margin-bottom: 10px;
+  }
+  .cell {
+    width: 64px;
+    height: 100%;
+  }
+  .cell-text-workday {
+    width: 100%;
+    height: 100%;
+    font-weight: 700;
+    font-size: 40px;
+    text-align: center;
+    color: rgb(255, 255, 255);
+    background-color: transparent;
+  }
+  .cell-text-weekend {
+    width: 100%;
+    height: 100%;
+    font-weight: 700;
+    font-size: 40px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    background-color: transparent;
+  }
+  .cell-text-today {
+    width: 100%;
+    height: 100%;
+    font-weight: 700;
+    font-size: 40px;
+    text-align: center;
+    color: #000000;
+    background-color: #ffffff;
+    border-radius: 50%;
+  }
+  .cell-text-other-month {
+    width: 100%;
+    height: 100%;
+    font-weight: 700;
+    font-size: 40px;
+    text-align: center;
+    color: rgba(174, 174, 174, 0);
+    background-color: transparent;
+  }
+</style>
+
+<script>
+import router from "@blueos.app.appmanager.router";
+
+export default {
+  data: {
+    date: new Date(),
+    year: "",
+    month: "",
+    list: null,
+    height: "50px",
+    formattedMonth: '', // 用于存储格式化后的月份
+    index: 0,
+  },
+
+  onInit() {
+    // 首先只初始化基本结构
+    this.initList();
+
+    // 使用setTimeout推迟非首屏必要的计算
+    setTimeout(() => {
+      this.getCalendar();
+      this.formattedMonth = this.month < 10 ? `0${this.month}` : this.month;
+    }, 0);
+  },
+
+  initList() {
+    let list = [];
+    for (let i = 0; i < 6; i++) { // 增加到6行，确保有足够空间显示上下月
+      let initArray = new Array(7).fill("x").map((_) => {
+        return {
+          value: "",
+          className: "",
+          inMonth: true,
+        };
+      });
+      list.push(initArray);
+    }
+    this.list = list;
+  },
+
+  isToday(yy, mm, dd) {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return yy === year && mm === month && dd === day;
+  },
+
+  getCalendar() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    // 获取当月第一天为周几
+    const firstDay = new Date(year, month + this.index, 1).getDay();
+
+    // 获取当月的天数
+    const days = new Date(year, month + 1 + this.index, 0).getDate();
+
+    // 获取上个月的天数
+    const prevMonthDays = new Date(year, month + this.index, 0).getDate();
+
+    const monthOffset = month + this.index;
+    this.month = ((monthOffset % 12) + 12) % 12 + 1; // 确保月份在 1-12 之间
+    this.year = year + Math.floor(monthOffset / 12); // 更新年份
+
+    const rows = Math.ceil((days + firstDay) / 7);
+    this.updateListRows(Math.max(rows, 6)); // 确保至少有6行
+    this.height = 300 / rows + "px";
+
+    // 重置列表
+    for (let i = 0; i < this.list.length; i++) {
+      for (let j = 0; j < 7; j++) {
+        this.list[i][j].value = "";
+        this.list[i][j].className = "";
+        this.list[i][j].inMonth = false;
+      }
+    }
+
+    // 填充上个月的日期
+    for (let i = 0; i < firstDay; i++) {
+      const prevMonthDay = prevMonthDays - firstDay + i + 1;
+      this.list[0][i].value = prevMonthDay;
+
+      if (i === 0 || i === 6) {
+        this.list[0][i].className = "cell-text-other-month";
+      } else {
+        this.list[0][i].className = "cell-text-other-month";
+      }
+
+      // 上个月日期标记
+      const prevMonth = ((this.month - 2) % 12 + 12) % 12 + 1;
+      const prevYear = this.month === 1 ? this.year - 1 : this.year;
+      this.list[0][i].id = "" + prevYear + prevMonth + prevMonthDay;
+      this.list[0][i].inMonth = false;
+    }
+
+    // 填充当月日期
+    let day = 1;
+    let row = 0;
+    let col = firstDay;
+
+    while (day <= days) {
+      if (col === 0 || col === 6) {
+        this.list[row][col].className = "cell-text-weekend";
+      } else {
+        this.list[row][col].className = "cell-text-workday";
+      }
+
+      if (this.isToday(this.year, this.month, day)) {
+        this.list[row][col].className = "cell-text-today";
+      }
+
+      this.list[row][col].value = day;
+      this.list[row][col].id = "" + this.year + this.month + day;
+      this.list[row][col].inMonth = true;
+
+      day++;
+      col++;
+
+      if (col > 6) {
+        col = 0;
+        row++;
+      }
+    }
+
+    // 填充下个月的日期
+    let nextMonthDay = 1;
+
+    while (row < 6) {
+      while (col < 7) {
+        if (col === 0 || col === 6) {
+          this.list[row][col].className = "cell-text-other-month";
+        } else {
+          this.list[row][col].className = "cell-text-other-month";
+        }
+
+        this.list[row][col].value = nextMonthDay;
+
+        // 下个月日期标记
+        const nextMonth = this.month % 12 + 1;
+        const nextYear = this.month === 12 ? this.year + 1 : this.year;
+        this.list[row][col].id = "" + nextYear + nextMonth + nextMonthDay;
+        this.list[row][col].inMonth = false;
+
+        nextMonthDay++;
+        col++;
+      }
+      col = 0;
+      row++;
+    }
+  },
+
+  updateListRows(rows) {
+    while (this.list.length < rows) {
+      let initArray = new Array(7).fill("x").map((_) => {
+        return {
+          value: "",
+          className: "",
+          inMonth: false,
+        };
+      });
+      this.list.push(initArray);
+    }
+
+    while (this.list.length > rows) {
+      this.list.pop();
+    }
+  },
+
+  prevMonth() {
+    this.index--;
+    this.getCalendar();
+    this.formattedMonth = this.month < 10 ? `0${this.month}` : this.month;
+    console.log("切换到上个月: " + this.year + "年" + this.month + "月");
+  },
+
+  nextMonth() {
+    this.index++;
+    this.getCalendar();
+    this.formattedMonth = this.month < 10 ? `0${this.month}` : this.month;
+    console.log("切换到下个月: " + this.year + "年" + this.month + "月");
+  },
+
+  handleClick(item) {
+    if (item.value === "") return;
+
+    router.push({
+      uri: "pages/detail",
+      params: {
+        year: this.year,
+        month: this.month,
+        day: item.value,
+        inMonth: item.inMonth,
+      },
+    });
+  },
+
+  handleSwipe(eve) {
+    console.log(eve);
+    if (eve.direction == "up") {
+      this.nextMonth();
+    } else if (eve.direction == "down") {
+      this.prevMonth();
+    }
+  }
+}
+</script>

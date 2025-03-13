@@ -1,0 +1,33 @@
+{
+  "package": "com.itos.calendar",
+  "name": "Calendar",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "appCategory": [
+    "other"
+  ],
+  "icon": "/assets/images/logo.png",
+  "features": [
+    {
+      "name": "blueos.app.appmanager.router"
+    }
+  ],
+  "deviceTypeList": [
+    "watch",
+    "watch-square"
+  ],
+  "config": {
+    "designWidth": 466
+  },
+  "router": {
+    "entry": "pages/index",
+    "pages": {
+      "pages/index": {
+        "component": "index"
+      },
+      "pages/detail": {
+        "component": "index"
+      }
+    }
+  }
+}
