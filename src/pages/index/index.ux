@@ -1,5 +1,10 @@
 <template>
   <div class="home-page" @swipe="handleSwipe">
+    <!-- 加载指示器遮罩层 -->
+    <div class="loading-mask" show="{{loading}}">
+      <vw-loading size="48"></vw-loading>
+    </div>
+    
     <div class="header">
       <div class="year-month">
         <text class="title" style="color: white;">{{ year }}年</text>
@@ -37,6 +42,19 @@
     align-items: center;
     background-color: #000000;
   }
+  
+  /* 加载指示器遮罩层样式 */
+  .loading-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+  }
+  
   .header {
     width: 100%;
     height: 110px;
@@ -45,6 +63,8 @@
     justify-content: space-between;
     align-items: center;
   }
+  
+  /* 其他样式保持不变... */
   .year-month {
     width: 240px;
     height: 60px;
@@ -141,6 +161,7 @@ export default {
     height: "50px",
     formattedMonth: '', // 用于存储格式化后的月份
     index: 0,
+    loading: true, // 添加loading状态变量
   },
 
   onInit() {
@@ -151,9 +172,15 @@ export default {
     setTimeout(() => {
       this.getCalendar();
       this.formattedMonth = this.month < 10 ? `0${this.month}` : this.month;
+      
+      // 数据加载完成后，隐藏loading
+      setTimeout(() => {
+        this.loading = false;
+      }, 500); // 给一个短暂延迟确保界面渲染完成
     }, 0);
   },
 
+  // 其他方法保持不变...
   initList() {
     let list = [];
     for (let i = 0; i < 6; i++) { // 增加到6行，确保有足够空间显示上下月
@@ -181,24 +208,24 @@ export default {
     const date = new Date();
     const year = date.getFullYear();
     const month = date.getMonth();
-
+    
     // 获取当月第一天为周几
     const firstDay = new Date(year, month + this.index, 1).getDay();
-
+    
     // 获取当月的天数
     const days = new Date(year, month + 1 + this.index, 0).getDate();
-
+    
     // 获取上个月的天数
     const prevMonthDays = new Date(year, month + this.index, 0).getDate();
-
+    
     const monthOffset = month + this.index;
     this.month = ((monthOffset % 12) + 12) % 12 + 1; // 确保月份在 1-12 之间
     this.year = year + Math.floor(monthOffset / 12); // 更新年份
-
+    
     const rows = Math.ceil((days + firstDay) / 7);
     this.updateListRows(Math.max(rows, 6)); // 确保至少有6行
     this.height = 300 / rows + "px";
-
+    
     // 重置列表
     for (let i = 0; i < this.list.length; i++) {
       for (let j = 0; j < 7; j++) {
@@ -207,57 +234,57 @@ export default {
         this.list[i][j].inMonth = false;
       }
     }
-
+    
     // 填充上个月的日期
     for (let i = 0; i < firstDay; i++) {
       const prevMonthDay = prevMonthDays - firstDay + i + 1;
       this.list[0][i].value = prevMonthDay;
-
+      
       if (i === 0 || i === 6) {
         this.list[0][i].className = "cell-text-other-month";
       } else {
         this.list[0][i].className = "cell-text-other-month";
       }
-
+      
       // 上个月日期标记
       const prevMonth = ((this.month - 2) % 12 + 12) % 12 + 1;
       const prevYear = this.month === 1 ? this.year - 1 : this.year;
       this.list[0][i].id = "" + prevYear + prevMonth + prevMonthDay;
       this.list[0][i].inMonth = false;
     }
-
+    
     // 填充当月日期
     let day = 1;
     let row = 0;
     let col = firstDay;
-
+    
     while (day <= days) {
       if (col === 0 || col === 6) {
         this.list[row][col].className = "cell-text-weekend";
       } else {
         this.list[row][col].className = "cell-text-workday";
       }
-
+      
       if (this.isToday(this.year, this.month, day)) {
         this.list[row][col].className = "cell-text-today";
       }
-
+      
       this.list[row][col].value = day;
       this.list[row][col].id = "" + this.year + this.month + day;
       this.list[row][col].inMonth = true;
-
+      
       day++;
       col++;
-
+      
       if (col > 6) {
         col = 0;
         row++;
       }
     }
-
+    
     // 填充下个月的日期
     let nextMonthDay = 1;
-
+    
     while (row < 6) {
       while (col < 7) {
         if (col === 0 || col === 6) {
@@ -265,15 +292,15 @@ export default {
         } else {
           this.list[row][col].className = "cell-text-other-month";
         }
-
+        
         this.list[row][col].value = nextMonthDay;
-
+        
         // 下个月日期标记
         const nextMonth = this.month % 12 + 1;
         const nextYear = this.month === 12 ? this.year + 1 : this.year;
         this.list[row][col].id = "" + nextYear + nextMonth + nextMonthDay;
         this.list[row][col].inMonth = false;
-
+        
         nextMonthDay++;
         col++;
       }
@@ -293,29 +320,41 @@ export default {
       });
       this.list.push(initArray);
     }
-
+    
     while (this.list.length > rows) {
       this.list.pop();
     }
   },
 
   prevMonth() {
+    this.loading = true; // 切换月份时显示加载
     this.index--;
     this.getCalendar();
     this.formattedMonth = this.month < 10 ? `0${this.month}` : this.month;
     console.log("切换到上个月: " + this.year + "年" + this.month + "月");
+    
+    // 数据加载完成后，隐藏loading
+    setTimeout(() => {
+      this.loading = false;
+    }, 300);
   },
 
   nextMonth() {
+    this.loading = true; // 切换月份时显示加载
     this.index++;
     this.getCalendar();
     this.formattedMonth = this.month < 10 ? `0${this.month}` : this.month;
     console.log("切换到下个月: " + this.year + "年" + this.month + "月");
+    
+    // 数据加载完成后，隐藏loading
+    setTimeout(() => {
+      this.loading = false;
+    }, 300);
   },
 
   handleClick(item) {
     if (item.value === "") return;
-
+    
     router.push({
       uri: "pages/detail",
       params: {
